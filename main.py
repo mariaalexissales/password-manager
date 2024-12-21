@@ -2,13 +2,10 @@ import base64
 import os
 import sys
 import argparse
-from pathlib import Path
 
-# Logic
-from cryptography.fernet import Fernet
 
-# Data
-import sqlite3
+from backend.encryption import EncryptionManager
+from backend.database import DatabaseManager
 
 def main():
     parser = argparse.ArgumentParser()
@@ -18,70 +15,43 @@ def main():
     parser.add_argument('--list', action='store_true', help="List of all saved keys")
     args = parser.parse_args()
     
-    database = sqlite3.connect("./vault/passwords.db")
-    cursor = database.cursor()
+    database = DatabaseManager()
+    encryption = EncryptionManager()
     
     if args.init:
-        key_gen = Path("./vault/manager.key")
-        
-        if key_gen.is_file():
-            print("Encryption key is already generated.")
-            return
-        
-        key = Fernet.generate_key()
-        with open(key_gen, "wb") as key_file:
-            key_file.write(key)
-        
-        print("Key generated.")
-        
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS vault (
-            id INTEGER PRIMARY KEY,
-            app TEXT NOT NULL,
-            username TEXT NOT NULL,
-            password TEXT NOT NULL
-        )
-        """)
-        database.commit()
-        
-        print("Database initialized with 'vault' table.")
+        database.setup()
+        print("Database initialized with 'vault' table. Encryption key loaded")
         return
-
-    with open("./vault/manager.key", "rb") as key_file:
-        key = key_file.read()
-    fernet = Fernet(key)
     
     if args.add:
-        app, username, password = args.add
-        password = fernet.encrypt(password.encode())
+        app, username, password = args.add      
         
-        cursor.execute("INSERT INTO vault (app, username, password) VALUES (?, ?, ?)", (app, username, password))
-        database.commit()
+        password = encryption.encrypt(password)
+        
+        database.add_entry(app, username, password)
+        
         print(f"Inserted password for {app} for the username {username}.")
         return
     elif args.get:
         app, username = args.get
-        
-        cursor.execute("SELECT password FROM vault WHERE app = ? AND username = ?", (app, username))
-        result = cursor.fetchone()
-        
-        if result:
-            password = (fernet.decrypt(result[0])).decode()
+        encrypted_password = database.get_entry(app, username) 
+
+        if encrypted_password:
+            password = encryption.decrypt(encrypted_password)
             print(f"Password for the app/user combo {app, username} is {password}.")
         else:
             print(f"Entry does not exist for the passed in app/user combo: {app, username}")
         return
     elif args.list:
-        cursor.execute("SELECT DISTINCT app, username FROM vault")
-        results = cursor.fetchall()
+        entry_list = database.get_list()
         
-        if results:
+        if entry_list:
             print("Stored apps and usernames:")
-            for app, username in results:
+            for app, username in entry_list:
                 print(f"App: {app}, Username: {username}")
         else:
             print("No apps or usernames stored yet.")
-            
+
     database.close()
 
 if __name__ == "__main__":
