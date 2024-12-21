@@ -25,9 +25,7 @@ def main():
     
     if args.add:
         app, username, password = args.add      
-        
         password = encryption.encrypt(password)
-        
         database.add_entry(app, username, password)
         
         print(f"Inserted password for {app} for the username {username}.")
