@@ -11,9 +11,9 @@ class DatabaseManager:
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS vault (
             id INTEGER PRIMARY KEY,
-            app TEXT NOT NULL,
-            username TEXT NOT NULL,
-            password TEXT NOT NULL
+            app TEXT NOT NULL UNIQUE,
+            username TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL UNIQUE
         )
         """)
         self.connection.commit()
@@ -29,6 +29,9 @@ class DatabaseManager:
     def get_list(self):
         self.cursor.execute("SELECT DISTINCT app, username FROM vault")
         return self.cursor.fetchall()
+    
+    def delete_entry(self):
+        pass
     
     def close(self):
         self.connection.close()
