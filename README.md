@@ -1,5 +1,5 @@
 # password-manager
- personal password manager bc i'm tired of paying for services
+ personal password manager
 
 
 # How to use
@@ -11,7 +11,6 @@
 |`--list` | Returns the entire list of apps and usernames | `python3 main.py --list` |
 
 # TODO
-- [ ] cry
 - [ ] Make the database password protected
 - [ ] turn the current argparse stuff into subparsers
 - [ ] replace all sqlite3 methods with pyqt6.qtsql
